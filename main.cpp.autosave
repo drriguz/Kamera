@@ -1,0 +1,68 @@
+#include <liveMedia/liveMedia.hh>
+#include <BasicUsageEnvironment/BasicUsageEnvironment.hh>
+
+#include <QApplication>
+
+#include "app_window.h"
+
+#include "rtsp_client.h"
+#include "dummy_sink.h"
+#include "stream_state.h"
+
+// Forward function definitions:
+
+
+
+// Other event handler functions:
+
+// called at the end of a stream's expected duration (if the stream has not already signaled its end using a RTCP "BYE")
+
+// The main streaming routine (for each "rtsp://" URL):
+void openURL(UsageEnvironment& env, char const* progName, char const* rtspURL);
+
+
+
+// A function that outputs a string that identifies each stream (for debugging output).  Modify this if you wish:
+UsageEnvironment& operator<<(UsageEnvironment& env, const RTSPClient& rtspClient) {
+    return env << "[URL:\"" << rtspClient.url() << "\"]: ";
+}
+
+// A function that outputs a string that identifies each subsession (for debugging output).  Modify this if you wish:
+UsageEnvironment& operator<<(UsageEnvironment& env, const MediaSubsession& subsession) {
+    return env << subsession.mediumName() << "/" << subsession.codecName();
+}
+
+void usage(UsageEnvironment& env, char const* progName) {
+    env << "Usage: " << progName << " <rtsp-url-1> ... <rtsp-url-N>\n";
+    env << "\t(where each <rtsp-url-i> is a \"rtsp://\" URL)\n";
+}
+
+char eventLoopWatchVariable = 0;
+
+int main(int argc, char** argv) {
+    QApplication app(argc, argv);
+    WCwindow win;
+    win.show();
+    // Begin by setting up our usage environment:
+//    TaskScheduler* scheduler = BasicTaskScheduler::createNew();
+//    UsageEnvironment* env = BasicUsageEnvironment::createNew(*scheduler);
+
+//    avcodec_register_all();
+//    av_register_all();
+
+//    openURL(*env, argv[0], "rtsp://172.16.1.183:8554/txdx.mkv");
+
+//    // All subsequent activity takes place within the event loop:
+//    env->taskScheduler().doEventLoop(&eventLoopWatchVariable);
+//    // This function call does not return, unless, at some point in time, "eventLoopWatchVariable" gets set to something non-zero.
+
+    return app.exec();
+
+    // If you choose to continue the application past this point (i.e., if you comment out the "return 0;" statement above),
+    // and if you don't intend to do anything more with the "TaskScheduler" and "UsageEnvironment" objects,
+    // then you can also reclaim the (small) memory used by these objects by uncommenting the following code:
+    /*
+    env->reclaim(); env = NULL;
+    delete scheduler; scheduler = NULL;
+  */
+}

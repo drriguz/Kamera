@@ -10,11 +10,13 @@ CONFIG -= app_bundle
 TEMPLATE = app
 
 SOURCES += main.cpp \
-    camera_rtsp_client.cpp \
     dummy_sink.cpp \
     stream_state.cpp \
     app_window.cpp \
-    decode_thread.cpp
+    decode_thread.cpp \
+    rtsp_client.cpp \
+    rtsp_callback.cpp \
+    rtsp_session.cpp
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked deprecated (the exact warnings
@@ -40,7 +42,9 @@ LIBS += -framework Security -framework VideoDecodeAcceleration
 
 HEADERS += \
     stream_state.h \
-    camera_rtsp_client.h \
     dummy_sink.h \
     app_window.h \
-    decode_thread.h
+    decode_thread.h \
+    rtsp_client.h \
+    rtsp_callback.h \
+    rtsp_session.h

@@ -5,21 +5,16 @@
 
 #include "app_window.h"
 
-#include "camera_rtsp_client.h"
+#include "rtsp_client.h"
 #include "dummy_sink.h"
 #include "stream_state.h"
 
 // Forward function definitions:
 
-// RTSP 'response handlers':
-void continueAfterDESCRIBE(RTSPClient* rtspClient, int resultCode, char* resultString);
-void continueAfterSETUP(RTSPClient* rtspClient, int resultCode, char* resultString);
-void continueAfterPLAY(RTSPClient* rtspClient, int resultCode, char* resultString);
+
 
 // Other event handler functions:
-void subsessionAfterPlaying(void* clientData); // called when a stream's subsession (e.g., audio or video substream) ends
-void subsessionByeHandler(void* clientData); // called when a RTCP "BYE" is received for a subsession
-void streamTimerHandler(void* clientData);
+
 // called at the end of a stream's expected duration (if the stream has not already signaled its end using a RTCP "BYE")
 
 // The main streaming routine (for each "rtsp://" URL):
@@ -83,7 +78,7 @@ static unsigned rtspClientCount = 0; // Counts how many streams (i.e., "RTSPClie
 void openURL(UsageEnvironment& env, char const* progName, char const* rtspURL) {
     // Begin by creating a "RTSPClient" object.  Note that there is a separate "RTSPClient" object for each stream that we wish
     // to receive (even if more than stream uses the same "rtsp://" URL).
-    RTSPClient* rtspClient = ourRTSPClient::createNew(env, rtspURL, RTSP_CLIENT_VERBOSITY_LEVEL, progName);
+    RTSPClient* rtspClient = CustomRTSPClient::createNew(env, rtspURL, RTSP_CLIENT_VERBOSITY_LEVEL, progName);
     if (rtspClient == NULL) {
         env << "Failed to create a RTSP client for URL \"" << rtspURL << "\": " << env.getResultMsg() << "\n";
         return;
@@ -100,42 +95,7 @@ void openURL(UsageEnvironment& env, char const* progName, char const* rtspURL) {
 
 // Implementation of the RTSP 'response handlers':
 
-void continueAfterDESCRIBE(RTSPClient* rtspClient, int resultCode, char* resultString) {
-    do {
-        UsageEnvironment& env = rtspClient->envir(); // alias
-        StreamClientState& scs = ((ourRTSPClient*)rtspClient)->scs; // alias
 
-        if (resultCode != 0) {
-            env << *rtspClient << "Failed to get a SDP description: " << resultString << "\n";
-            delete[] resultString;
-            break;
-        }
-
-        char* const sdpDescription = resultString;
-        env << *rtspClient << "Got a SDP description:\n" << sdpDescription << "\n";
-
-        // Create a media session object from this SDP description:
-        scs.session = MediaSession::createNew(env, sdpDescription);
-        delete[] sdpDescription; // because we don't need it anymore
-        if (scs.session == NULL) {
-            env << *rtspClient << "Failed to create a MediaSession object from the SDP description: " << env.getResultMsg() << "\n";
-            break;
-        } else if (!scs.session->hasSubsessions()) {
-            env << *rtspClient << "This session has no media subsessions (i.e., no \"m=\" lines)\n";
-            break;
-        }
-
-        // Then, create and set up our data source objects for the session.  We do this by iterating over the session's 'subsessions',
-        // calling "MediaSubsession::initiate()", and then sending a RTSP "SETUP" command, on each one.
-        // (Each 'subsession' will have its own data source.)
-        scs.iter = new MediaSubsessionIterator(*scs.session);
-        setupNextSubsession(rtspClient);
-        return;
-    } while (0);
-
-    // An unrecoverable error occurred with this stream.
-    shutdownStream(rtspClient);
-}
 
 // By default, we request that the server stream its data using RTP/UDP.
 // If, instead, you want to request that the server stream via RTP-over-TCP, change the following to True:
@@ -143,7 +103,7 @@ void continueAfterDESCRIBE(RTSPClient* rtspClient, int resultCode, char* resultS
 
 void setupNextSubsession(RTSPClient* rtspClient) {
     UsageEnvironment& env = rtspClient->envir(); // alias
-    StreamClientState& scs = ((ourRTSPClient*)rtspClient)->scs; // alias
+    StreamClientState& scs = ((CustomRTSPClient*)rtspClient)->scs; // alias
 
     scs.subsession = scs.iter->next();
     if (scs.subsession != NULL) {
@@ -175,122 +135,9 @@ void setupNextSubsession(RTSPClient* rtspClient) {
     }
 }
 
-void continueAfterSETUP(RTSPClient* rtspClient, int resultCode, char* resultString) {
-    do {
-        UsageEnvironment& env = rtspClient->envir(); // alias
-        StreamClientState& scs = ((ourRTSPClient*)rtspClient)->scs; // alias
-
-        if (resultCode != 0) {
-            env << *rtspClient << "Failed to set up the \"" << *scs.subsession << "\" subsession: " << resultString << "\n";
-            break;
-        }
-
-        env << *rtspClient << "Set up the \"" << *scs.subsession << "\" subsession (";
-        if (scs.subsession->rtcpIsMuxed()) {
-            env << "client port " << scs.subsession->clientPortNum();
-        } else {
-            env << "client ports " << scs.subsession->clientPortNum() << "-" << scs.subsession->clientPortNum()+1;
-        }
-        env << ")\n";
-
-        const char *sprop = scs.subsession->fmtp_spropparametersets();
-        uint8_t const* sps = NULL;
-        unsigned spsSize = 0;
-        uint8_t const* pps = NULL;
-        unsigned ppsSize = 0;
-
-        if (sprop != NULL) {
-            unsigned numSPropRecords;
-            SPropRecord* sPropRecords = parseSPropParameterSets(sprop, numSPropRecords);
-            for (unsigned i = 0; i < numSPropRecords; ++i) {
-                if (sPropRecords[i].sPropLength == 0) continue; // bad data
-                u_int8_t nal_unit_type = (sPropRecords[i].sPropBytes[0])&0x1F;
-                if (nal_unit_type == 7/*SPS*/) {
-                    sps = sPropRecords[i].sPropBytes;
-                    spsSize = sPropRecords[i].sPropLength;
-                } else if (nal_unit_type == 8/*PPS*/) {
-                    pps = sPropRecords[i].sPropBytes;
-                    ppsSize = sPropRecords[i].sPropLength;
-                }
-            }
-        }
-
-        // Having successfully setup the subsession, create a data sink for it, and call "startPlaying()" on it.
-        // (This will prepare the data sink to receive data; the actual flow of data from the client won't start happening until later,
-        // after we've sent a RTSP "PLAY" command.)
-
-        scs.subsession->sink = DummySink::createNew(env, *scs.subsession, rtspClient->url());
-        // perhaps use your own custom "MediaSink" subclass instead
-        if (scs.subsession->sink == NULL) {
-            env << *rtspClient << "Failed to create a data sink for the \"" << *scs.subsession
-                << "\" subsession: " << env.getResultMsg() << "\n";
-            break;
-        }
-
-        env << *rtspClient << "Created a data sink for the \"" << *scs.subsession << "\" subsession\n";
-        scs.subsession->miscPtr = rtspClient; // a hack to let subsession handler functions get the "RTSPClient" from the subsession
 
 
-        if (sps != NULL) {
-            ((DummySink *)scs.subsession->sink)->setSprop(sps, spsSize);
-        }
-        if (pps != NULL) {
-            ((DummySink *)scs.subsession->sink)->setSprop(pps, ppsSize);
-        }
 
-        scs.subsession->sink->startPlaying(*(scs.subsession->readSource()),
-                                           subsessionAfterPlaying, scs.subsession);
-
-        // Also set a handler to be called if a RTCP "BYE" arrives for this subsession:
-        if (scs.subsession->rtcpInstance() != NULL) {
-            scs.subsession->rtcpInstance()->setByeHandler(subsessionByeHandler, scs.subsession);
-        }
-
-    } while (0);
-    delete[] resultString;
-
-    // Set up the next subsession, if any:
-    setupNextSubsession(rtspClient);
-}
-
-void continueAfterPLAY(RTSPClient* rtspClient, int resultCode, char* resultString) {
-    Boolean success = False;
-
-    do {
-        UsageEnvironment& env = rtspClient->envir(); // alias
-        StreamClientState& scs = ((ourRTSPClient*)rtspClient)->scs; // alias
-
-        if (resultCode != 0) {
-            env << *rtspClient << "Failed to start playing session: " << resultString << "\n";
-            break;
-        }
-
-        // Set a timer to be handled at the end of the stream's expected duration (if the stream does not already signal its end
-        // using a RTCP "BYE").  This is optional.  If, instead, you want to keep the stream active - e.g., so you can later
-        // 'seek' back within it and do another RTSP "PLAY" - then you can omit this code.
-        // (Alternatively, if you don't want to receive the entire stream, you could set this timer for some shorter value.)
-        if (scs.duration > 0) {
-            unsigned const delaySlop = 2; // number of seconds extra to delay, after the stream's expected duration.  (This is optional.)
-            scs.duration += delaySlop;
-            unsigned uSecsToDelay = (unsigned)(scs.duration*1000000);
-            scs.streamTimerTask = env.taskScheduler().scheduleDelayedTask(uSecsToDelay, (TaskFunc*)streamTimerHandler, rtspClient);
-        }
-
-        env << *rtspClient << "Started playing session";
-        if (scs.duration > 0) {
-            env << " (for up to " << scs.duration << " seconds)";
-        }
-        env << "...\n";
-
-        success = True;
-    } while (0);
-    delete[] resultString;
-
-    if (!success) {
-        // An unrecoverable error occurred with this stream.
-        shutdownStream(rtspClient);
-    }
-}
 
 
 // Implementation of the other event handlers:
@@ -326,7 +173,7 @@ void subsessionByeHandler(void* clientData) {
 }
 
 void streamTimerHandler(void* clientData) {
-    ourRTSPClient* rtspClient = (ourRTSPClient*)clientData;
+    CustomRTSPClient* rtspClient = (CustomRTSPClient*)clientData;
     StreamClientState& scs = rtspClient->scs; // alias
 
     scs.streamTimerTask = NULL;
@@ -337,7 +184,7 @@ void streamTimerHandler(void* clientData) {
 
 void shutdownStream(RTSPClient* rtspClient, int exitCode) {
     UsageEnvironment& env = rtspClient->envir(); // alias
-    StreamClientState& scs = ((ourRTSPClient*)rtspClient)->scs; // alias
+    StreamClientState& scs = ((CustomRTSPClient*)rtspClient)->scs; // alias
 
     // First, check whether any subsessions have still to be closed:
     if (scs.session != NULL) {

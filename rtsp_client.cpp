@@ -1,16 +1,16 @@
-#include "camera_rtsp_client.h"
+#include "rtsp_client.h"
 
 // Implementation of "ourRTSPClient":
 
-ourRTSPClient* ourRTSPClient::createNew(UsageEnvironment& env, char const* rtspURL,
+CustomRTSPClient* CustomRTSPClient::createNew(UsageEnvironment& env, char const* rtspURL,
                                         int verbosityLevel, char const* applicationName, portNumBits tunnelOverHTTPPortNum) {
-    return new ourRTSPClient(env, rtspURL, verbosityLevel, applicationName, tunnelOverHTTPPortNum);
+    return new CustomRTSPClient(env, rtspURL, verbosityLevel, applicationName, tunnelOverHTTPPortNum);
 }
 
-ourRTSPClient::ourRTSPClient(UsageEnvironment& env, char const* rtspURL,
+CustomRTSPClient::CustomRTSPClient(UsageEnvironment& env, char const* rtspURL,
                              int verbosityLevel, char const* applicationName, portNumBits tunnelOverHTTPPortNum)
     : RTSPClient(env,rtspURL, verbosityLevel, applicationName, tunnelOverHTTPPortNum, -1) {
 }
 
-ourRTSPClient::~ourRTSPClient() {
+CustomRTSPClient::~CustomRTSPClient() {
 }
