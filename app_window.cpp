@@ -16,4 +16,12 @@ WCwindow::WCwindow()
 
     setWindowTitle("Camera Window");
     setFixedSize(800, 600);
+
+    this->_decodeThread = new DecodeThread(this);
+    this->_decodeThread->start();
+}
+
+WCwindow::~WCwindow()
+{
+    this->_decodeThread->stop();
 }

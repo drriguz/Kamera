@@ -6,12 +6,16 @@
 #include <QGridLayout>
 #include <QImage>
 
+#include "decode_thread.h"
+
 class WCwindow : public QMainWindow
 {
 public:
     WCwindow();
+    ~WCwindow();
 private:
     QLabel* _cameraScreen;
+    DecodeThread* _decodeThread;
 };
 
 
