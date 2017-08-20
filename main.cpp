@@ -1,6 +1,10 @@
 #include <liveMedia/liveMedia.hh>
 #include <BasicUsageEnvironment/BasicUsageEnvironment.hh>
 
+#include <QApplication>
+
+#include "app_window.h"
+
 #include "camera_rtsp_client.h"
 #include "dummy_sink.h"
 #include "stream_state.h"
@@ -45,20 +49,23 @@ void usage(UsageEnvironment& env, char const* progName) {
 char eventLoopWatchVariable = 0;
 
 int main(int argc, char** argv) {
+    QApplication app(argc, argv);
+    WCwindow win;
+    win.show();
     // Begin by setting up our usage environment:
-    TaskScheduler* scheduler = BasicTaskScheduler::createNew();
-    UsageEnvironment* env = BasicUsageEnvironment::createNew(*scheduler);
+//    TaskScheduler* scheduler = BasicTaskScheduler::createNew();
+//    UsageEnvironment* env = BasicUsageEnvironment::createNew(*scheduler);
 
-    avcodec_register_all();
-    av_register_all();
+//    avcodec_register_all();
+//    av_register_all();
 
-    openURL(*env, argv[0], "rtsp://172.16.1.183:8554/txdx.mkv");
+//    openURL(*env, argv[0], "rtsp://172.16.1.183:8554/txdx.mkv");
 
-    // All subsequent activity takes place within the event loop:
-    env->taskScheduler().doEventLoop(&eventLoopWatchVariable);
-    // This function call does not return, unless, at some point in time, "eventLoopWatchVariable" gets set to something non-zero.
+//    // All subsequent activity takes place within the event loop:
+//    env->taskScheduler().doEventLoop(&eventLoopWatchVariable);
+//    // This function call does not return, unless, at some point in time, "eventLoopWatchVariable" gets set to something non-zero.
 
-    return 0;
+    return app.exec();
 
     // If you choose to continue the application past this point (i.e., if you comment out the "return 0;" statement above),
     // and if you don't intend to do anything more with the "TaskScheduler" and "UsageEnvironment" objects,

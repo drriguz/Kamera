@@ -1,5 +1,5 @@
-QT += core
-QT -= gui
+QT += core gui
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++11
 
@@ -12,7 +12,8 @@ TEMPLATE = app
 SOURCES += main.cpp \
     camera_rtsp_client.cpp \
     dummy_sink.cpp \
-    stream_state.cpp
+    stream_state.cpp \
+    app_window.cpp
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked deprecated (the exact warnings
@@ -39,4 +40,5 @@ LIBS += -framework Security -framework VideoDecodeAcceleration
 HEADERS += \
     stream_state.h \
     camera_rtsp_client.h \
-    dummy_sink.h
+    dummy_sink.h \
+    app_window.h
