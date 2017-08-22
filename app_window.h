@@ -6,16 +6,19 @@
 #include <QGridLayout>
 #include <QImage>
 
-#include "decode_thread.h"
+#include <string>
+
+#include "rtsp_session.h"
 
 class WCwindow : public QMainWindow
 {
 public:
-    WCwindow();
+    WCwindow(const char* progName);
     ~WCwindow();
 private:
+    std::string _progName;
     QLabel* _cameraScreen;
-    DecodeThread* _decodeThread;
+    RtspSession* _rtspSession;
 };
 
 

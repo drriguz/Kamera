@@ -1,6 +1,7 @@
 #include "app_window.h"
 
-WCwindow::WCwindow()
+WCwindow::WCwindow(const char* progName)
+    : _progName(progName)
 {
     QGridLayout *layout = new QGridLayout;
 
@@ -17,11 +18,12 @@ WCwindow::WCwindow()
     setWindowTitle("Camera Window");
     setFixedSize(800, 600);
 
-    this->_decodeThread = new DecodeThread(this);
-    this->_decodeThread->start();
+    this->_rtspSession = new RtspSession(this->_progName.c_str(), "rtsp://172.16.1.183:8554/txdx.mkv", this);
+    this->_rtspSession->start();
+
 }
 
 WCwindow::~WCwindow()
 {
-    this->_decodeThread->stop();
+
 }

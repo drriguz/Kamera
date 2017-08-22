@@ -1,29 +1,61 @@
 #include "rtsp_session.h"
 #include "rtsp_client.h"
+#include "rtsp_callback.h"
 
 #include <iostream>
 
 #define RTSP_CLIENT_VERBOSITY_LEVEL 1
 
-RtspSession::RtspSession(const char* progName, UsageEnvironment& env)
-    :_progName(progName),
-      _url(""),
-      _env(&env),
+RtspSession::RtspSession(const char* progName, const char* url, QObject* parent)
+    : _progName(progName),
+      _url(url),
+      _rtspClient(NULL),
       _eventLoopWatchVariable(0),
-      _running(true){
-    scheduler = BasicTaskScheduler::createNew();
+      _running(true),
+      QThread(parent){
+
 }
 
 RtspSession::~RtspSession(){
+    stop();
+    quit();
+    wait();
 
 }
 
-void RtspSession::openURL(const char *rtspURL){
-    RTSPClient* rtspClient = CustomRTSPClient::createNew(*env, rtspURL, RTSP_CLIENT_VERBOSITY_LEVEL, this->_progName);
-    if (rtspClient == NULL) {
-        std::cerr << "Failed to create a RTSP client for URL \"" << rtspURL << "\": " << env->getResultMsg() << "\n";
+void RtspSession::stop(){
+    this->_running = false;
+    this->_eventLoopWatchVariable = 1;
+}
+
+void RtspSession::run(){
+    TaskScheduler* scheduler= BasicTaskScheduler::createNew();
+    UsageEnvironment* env = BasicUsageEnvironment::createNew(*scheduler);
+
+    if(!this->openURL(*env, this->_progName.c_str(), this->_url.c_str())){
         return;
     }
-    rtspClient->sendDescribeCommand(continueAfterDESCRIBE);
+    env->taskScheduler().doEventLoop(&this->_eventLoopWatchVariable);
+    std::cout << "Rtsp event finished" << std::endl;
+    env->reclaim();
+    env = NULL;
+    delete scheduler;
+    scheduler = NULL;
+}
+
+bool RtspSession::openURL(UsageEnvironment &env, const char *progName, const char *url){
+    this->_rtspClient = CustomRTSPClient::createNew(
+                env,
+                url,
+                RTSP_CLIENT_VERBOSITY_LEVEL,
+                progName);
+    if (this->_rtspClient == NULL) {
+        std::cerr << "Failed to create a RTSP client for URL \""
+                  << this->_url << "\": "
+                  << env.getResultMsg() << "\n";
+        return false;
+    }
+    this->_rtspClient->sendDescribeCommand(continueAfterDESCRIBE);
+    return true;
 }
 

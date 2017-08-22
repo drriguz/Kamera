@@ -15,7 +15,5 @@ void streamTimerHandler(void* clientData);
 
 // Used to iterate through each stream's 'subsessions', setting up each one:
 void setupNextSubsession(RTSPClient* rtspClient);
-
-// Used to shut down and close a stream (including its "RTSPClient" object):
-void shutdownStream(RTSPClient* rtspClient, int exitCode = 1);
+void shutdownStream(RTSPClient* rtspClient);
 #endif // RTSP_CALLBACK_H

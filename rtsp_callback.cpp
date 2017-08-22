@@ -1,4 +1,19 @@
 #include "rtsp_callback.h"
+#include "stream_state.h"
+#include "rtsp_client.h"
+#include "dummy_sink.h"
+
+#include <iostream>
+
+// A function that outputs a string that identifies each stream (for debugging output).  Modify this if you wish:
+UsageEnvironment& operator<<(UsageEnvironment& env, const RTSPClient& rtspClient) {
+  return env << "[URL:\"" << rtspClient.url() << "\"]: ";
+}
+
+// A function that outputs a string that identifies each subsession (for debugging output).  Modify this if you wish:
+UsageEnvironment& operator<<(UsageEnvironment& env, const MediaSubsession& subsession) {
+  return env << subsession.mediumName() << "/" << subsession.codecName();
+}
 
 void continueAfterDESCRIBE(RTSPClient* rtspClient, int resultCode, char* resultString) {
     do {
@@ -234,7 +249,7 @@ void streamTimerHandler(void* clientData) {
     shutdownStream(rtspClient);
 }
 
-void shutdownStream(RTSPClient* rtspClient, int exitCode) {
+void shutdownStream(RTSPClient* rtspClient){
     UsageEnvironment& env = rtspClient->envir(); // alias
     StreamClientState& scs = ((CustomRTSPClient*)rtspClient)->scs; // alias
 
@@ -264,15 +279,6 @@ void shutdownStream(RTSPClient* rtspClient, int exitCode) {
         }
     }
 
-    env << *rtspClient << "Closing the stream.\n";
+    std::cout << "Closing the stream.\n";
     Medium::close(rtspClient);
-    // Note that this will also cause this stream's "StreamClientState" structure to get reclaimed.
-
-    if (--rtspClientCount == 0) {
-        // The final stream has ended, so exit the application now.
-        // (Of course, if you're embedding this code into your own application, you might want to comment this out,
-        // and replace it with "eventLoopWatchVariable = 1;", so that we leave the LIVE555 event loop, and continue running "main()".)
-        exit(exitCode);
-    }
 }
-

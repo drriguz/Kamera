@@ -13,7 +13,6 @@ SOURCES += main.cpp \
     dummy_sink.cpp \
     stream_state.cpp \
     app_window.cpp \
-    decode_thread.cpp \
     rtsp_client.cpp \
     rtsp_callback.cpp \
     rtsp_session.cpp
@@ -44,7 +43,6 @@ HEADERS += \
     stream_state.h \
     dummy_sink.h \
     app_window.h \
-    decode_thread.h \
     rtsp_client.h \
     rtsp_callback.h \
     rtsp_session.h

@@ -10,15 +10,16 @@
 class RtspSession: public QThread{
     Q_OBJECT
 public:
-    RtspSession(const char* progName, UsageEnvironment& env);
+    explicit RtspSession(const char* progName, const char* url, QObject *parent =NULL);
     virtual ~RtspSession();
 public:
-    void openURL(const char* rtspURL);
+    void stop();
+protected:
+    bool openURL(UsageEnvironment& env, const char* progName, const char * url);
+    void run();
 private:
     std::string _progName;
     std::string _url;
-    TaskScheduler* _scheduler;
-    UsageEnvironment* _env;
     RTSPClient* _rtspClient;
     char _eventLoopWatchVariable;
     volatile bool _running;
