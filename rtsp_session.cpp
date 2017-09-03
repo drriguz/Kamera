@@ -11,7 +11,6 @@ RtspSession::RtspSession(const char* progName, const char* url, QObject* parent)
       _url(url),
       _rtspClient(NULL),
       _eventLoopWatchVariable(0),
-      _running(true),
       QThread(parent){
 
 }
@@ -24,11 +23,12 @@ RtspSession::~RtspSession(){
 }
 
 void RtspSession::stop(){
-    this->_running = false;
     this->_eventLoopWatchVariable = 1;
 }
 
 void RtspSession::run(){
+    this->_eventLoopWatchVariable = 0;
+
     TaskScheduler* scheduler= BasicTaskScheduler::createNew();
     UsageEnvironment* env = BasicUsageEnvironment::createNew(*scheduler);
 

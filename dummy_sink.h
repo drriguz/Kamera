@@ -51,11 +51,13 @@ private:
     char* fStreamId;
 private:
     AVCodec *codec;
-    AVCodecContext *c;
-    int frame;
+    AVCodecContext *codecContext;
+    int frameIndex;
     int got_picture;
     int len;
-    AVFrame *picture;
+    AVFrame *frame;
+    AVFrame *rgbFrame;
+    SwsContext* sws_cxt;
     uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
     char buf[1024];
     AVPacket avpkt;

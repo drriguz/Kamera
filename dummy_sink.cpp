@@ -1,6 +1,8 @@
 #include "dummy_sink.h"
 
-
+#include <Qimage>
+#include <QImageWriter>
+#include <iostream>
 
 // Implementation of "DummySink":
 
@@ -14,6 +16,7 @@ DummySink* DummySink::createNew(UsageEnvironment& env, MediaSubsession& subsessi
 
 DummySink::DummySink(UsageEnvironment& env, MediaSubsession& subsession, char const* streamId)
     : MediaSink(env),
+      frameIndex(0),
       fSubsession(subsession) {
     fStreamId = strDup(streamId);
     fReceiveBuffer = new u_int8_t[DUMMY_SINK_RECEIVE_BUFFER_SIZE];
@@ -36,21 +39,26 @@ DummySink::DummySink(UsageEnvironment& env, MediaSubsession& subsession, char co
         exit(4);
     }
 
-    c = avcodec_alloc_context3(codec);
-    picture = av_frame_alloc();
+    codecContext = avcodec_alloc_context3(codec);
+    frame = av_frame_alloc();
+    rgbFrame = av_frame_alloc();
+    avpicture_alloc( ( AVPicture *) rgbFrame, AV_PIX_FMT_RGB24, 720, 480);
 
     if (codec->capabilities & CODEC_CAP_TRUNCATED) {
-        c->flags |= CODEC_FLAG_TRUNCATED; // we do not send complete frames
+        codecContext->flags |= CODEC_FLAG_TRUNCATED; // we do not send complete frames
     }
 
-    c->width = 640;
-    c->height = 360;
-    c->pix_fmt = AV_PIX_FMT_YUV420P;
+    codecContext->width = 720;
+    codecContext->height = 480;
+    codecContext->pix_fmt = AV_PIX_FMT_YUV420P;
 
-    if (avcodec_open2(c,codec,NULL) < 0) {
+    if (avcodec_open2(codecContext,codec,NULL) < 0) {
         envir() << "could not open codec";
         exit(5);
     }
+
+    this->sws_cxt = sws_getContext( codecContext->width, codecContext->height, codecContext->pix_fmt, 400, 300,
+                                    AV_PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL);
 }
 
 DummySink::~DummySink() {
@@ -66,8 +74,8 @@ void DummySink::afterGettingFrame(void* clientData, unsigned frameSize, unsigned
 }
 
 // If you don't want to see debugging output for each received frame, then comment out the following line:
-#define DEBUG_PRINT_EACH_RECEIVED_FRAME 1
-#define DEBUG_PRINT_NPT 1
+//#define DEBUG_PRINT_EACH_RECEIVED_FRAME 1
+//#define DEBUG_PRINT_NPT 1
 
 void DummySink::afterGettingFrame(unsigned frameSize, unsigned numTruncatedBytes,
                                   struct timeval presentationTime, unsigned /*durationInMicroseconds*/) {
@@ -94,13 +102,35 @@ void DummySink::afterGettingFrame(unsigned frameSize, unsigned numTruncatedBytes
         avpkt.size = frameSize + 4;
         memcpy (fReceiveBufferAV + 4, fReceiveBuffer, frameSize);
         avpkt.data = fReceiveBufferAV;
-        len = avcodec_decode_video2 (c, picture, &got_picture, &avpkt);
+        len = avcodec_decode_video2 (codecContext, frame, &got_picture, &avpkt);
         if (len < 0) {
-            envir() << "Error while decoding frame " << frame << "\n";
+            envir() << "Error while decoding frame " << frameIndex << "\n";
         }
         if (got_picture) {
-            envir() << "->Picture decoded" << frame << "\n";
-            frame ++;
+            envir() << "->Picture decoded :" << frameIndex << "\n";
+            sws_scale(this->sws_cxt, this->frame->data,this->frame->linesize,
+                      0, this->codecContext->height,
+                      this->rgbFrame->data, this->rgbFrame->linesize);
+            QImage *image = new QImage(this->rgbFrame->data[0],
+                    this->codecContext->width,
+                    this->codecContext->height,
+                    QImage::Format_RGB888);
+//            QImage image(this->pictureRGB->data[0],
+//                    this->c->width,
+//                    this->c->height,
+//                    this->pictureRGB->linesize[0],
+//                    QImage::Format_RGB888);
+
+            QString name = QString("/Users/hfli/Movies/%1.jpg").arg(frameIndex);
+            if(frameIndex % 10 == 0){
+                QImageWriter writer(name);
+                if(!writer.write(*image))
+                {
+                    std::cout << writer.errorString().toStdString();
+                }
+                std::cout << "saved:" << std::endl;
+            }
+            frameIndex ++;
         }
     }
 
@@ -131,7 +161,7 @@ void DummySink::setSprop(u_int8_t const* prop, unsigned size) {
     avpkt.data[3]   = 1;
     memcpy (buf_start, prop, size);
     avpkt.size = size + 4;
-    len = avcodec_decode_video2 (c, picture, &got_picture, &avpkt);
+    len = avcodec_decode_video2 (codecContext, frame, &got_picture, &avpkt);
     if (len < 0) {
         envir() << "Error while decoding frame" << frame;
         //		exit(6);

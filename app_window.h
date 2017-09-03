@@ -2,7 +2,9 @@
 #define APP_WINDOW_H
 
 #include <QMainWindow>
+#include <QWidget>
 #include <QLabel>
+#include <QPushButton>
 #include <QGridLayout>
 #include <QImage>
 
@@ -10,14 +12,23 @@
 
 #include "rtsp_session.h"
 
-class WCwindow : public QMainWindow
+class AppWindow : public QMainWindow
 {
+    Q_OBJECT
 public:
-    WCwindow(const char* progName);
-    ~WCwindow();
+    explicit AppWindow(const char* progName, QWidget* parent = 0);
+    virtual ~AppWindow(){};
+private slots:
+    void onStart();
+    void onStop();
+private:
+    void setupUi();
+    void bindEvents();
 private:
     std::string _progName;
     QLabel* _cameraScreen;
+    QPushButton* _startCaptureButton;
+    QPushButton* _stopCaptureButton;
     RtspSession* _rtspSession;
 };
 

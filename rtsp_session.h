@@ -22,7 +22,6 @@ private:
     std::string _url;
     RTSPClient* _rtspClient;
     char _eventLoopWatchVariable;
-    volatile bool _running;
 };
 
 #endif // RSTP_CLIENT_H
