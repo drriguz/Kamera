@@ -1,12 +1,14 @@
 #include "app_window.h"
 #include <iostream>
 
+const char * url = "rtsp://172.16.1.183:8554/344.mkv";
+
 AppWindow::AppWindow(const char* progName, QWidget* parent)
     : QMainWindow(parent),
       _progName(progName){
     this->setupUi();
     this->bindEvents();
-    this->_rtspSession = new RtspSession(this->_progName.c_str(), "rtsp://172.16.1.183:8554/344.mkv", this);
+    this->_rtspSession = new RtspSession(1024, this->_progName.c_str(), url, this);
 }
 
 void AppWindow::setupUi(){

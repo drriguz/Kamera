@@ -6,20 +6,19 @@
 
 #define RTSP_CLIENT_VERBOSITY_LEVEL 1
 
-RtspSession::RtspSession(const char* progName, const char* url, QObject* parent)
-    : _progName(progName),
+RtspSession::RtspSession(int id, const char* progName, const char* url, QObject* parent)
+    : _id(id),
+      _progName(progName),
       _url(url),
       _rtspClient(NULL),
       _eventLoopWatchVariable(0),
       QThread(parent){
-
 }
 
 RtspSession::~RtspSession(){
     stop();
     quit();
     wait();
-
 }
 
 void RtspSession::stop(){

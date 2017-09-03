@@ -18,7 +18,7 @@ UsageEnvironment& operator<<(UsageEnvironment& env, const MediaSubsession& subse
 void continueAfterDESCRIBE(RTSPClient* rtspClient, int resultCode, char* resultString) {
     do {
         UsageEnvironment& env = rtspClient->envir(); // alias
-        StreamClientState& scs = ((CustomRTSPClient*)rtspClient)->scs; // alias
+        StreamClientState& scs = ((CustomRTSPClient*)rtspClient)->getStreamClientState(); // alias
 
         if (resultCode != 0) {
             env << *rtspClient << "Failed to get a SDP description: " << resultString << "\n";
@@ -55,7 +55,7 @@ void continueAfterDESCRIBE(RTSPClient* rtspClient, int resultCode, char* resultS
 void continueAfterSETUP(RTSPClient* rtspClient, int resultCode, char* resultString) {
     do {
         UsageEnvironment& env = rtspClient->envir(); // alias
-        StreamClientState& scs = ((CustomRTSPClient*)rtspClient)->scs; // alias
+        StreamClientState& scs = ((CustomRTSPClient*)rtspClient)->getStreamClientState(); // alias
 
         if (resultCode != 0) {
             env << *rtspClient << "Failed to set up the \"" << *scs.subsession << "\" subsession: " << resultString << "\n";
@@ -135,7 +135,7 @@ void continueAfterPLAY(RTSPClient* rtspClient, int resultCode, char* resultStrin
 
     do {
         UsageEnvironment& env = rtspClient->envir(); // alias
-        StreamClientState& scs = ((CustomRTSPClient*)rtspClient)->scs; // alias
+        StreamClientState& scs = ((CustomRTSPClient*)rtspClient)->getStreamClientState(); // alias
 
         if (resultCode != 0) {
             env << *rtspClient << "Failed to start playing session: " << resultString << "\n";
@@ -175,7 +175,7 @@ void continueAfterPLAY(RTSPClient* rtspClient, int resultCode, char* resultStrin
 
 void setupNextSubsession(RTSPClient* rtspClient) {
     UsageEnvironment& env = rtspClient->envir(); // alias
-    StreamClientState& scs = ((CustomRTSPClient*)rtspClient)->scs; // alias
+    StreamClientState& scs = ((CustomRTSPClient*)rtspClient)->getStreamClientState(); // alias
 
     scs.subsession = scs.iter->next();
     if (scs.subsession != NULL) {
@@ -241,7 +241,7 @@ void subsessionByeHandler(void* clientData) {
 
 void streamTimerHandler(void* clientData) {
     CustomRTSPClient* rtspClient = (CustomRTSPClient*)clientData;
-    StreamClientState& scs = rtspClient->scs; // alias
+    StreamClientState& scs = rtspClient->getStreamClientState(); // alias
 
     scs.streamTimerTask = NULL;
 
@@ -251,7 +251,7 @@ void streamTimerHandler(void* clientData) {
 
 void shutdownStream(RTSPClient* rtspClient){
     UsageEnvironment& env = rtspClient->envir(); // alias
-    StreamClientState& scs = ((CustomRTSPClient*)rtspClient)->scs; // alias
+    StreamClientState& scs = ((CustomRTSPClient*)rtspClient)->getStreamClientState(); // alias
 
     // First, check whether any subsessions have still to be closed:
     if (scs.session != NULL) {
