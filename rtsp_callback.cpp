@@ -55,22 +55,22 @@ void continueAfterDESCRIBE(RTSPClient* rtspClient, int resultCode, char* resultS
 void continueAfterSETUP(RTSPClient* rtspClient, int resultCode, char* resultString) {
     do {
         UsageEnvironment& env = rtspClient->envir(); // alias
-        StreamClientState& scs = ((CustomRTSPClient*)rtspClient)->getStreamClientState(); // alias
+        StreamClientState& streamClientState = ((CustomRTSPClient*)rtspClient)->getStreamClientState(); // alias
 
         if (resultCode != 0) {
-            env << *rtspClient << "Failed to set up the \"" << *scs.subsession << "\" subsession: " << resultString << "\n";
+            env << *rtspClient << "Failed to set up the \"" << *streamClientState.subsession << "\" subsession: " << resultString << "\n";
             break;
         }
 
-        env << *rtspClient << "Set up the \"" << *scs.subsession << "\" subsession (";
-        if (scs.subsession->rtcpIsMuxed()) {
-            env << "client port " << scs.subsession->clientPortNum();
+        env << *rtspClient << "Set up the \"" << *streamClientState.subsession << "\" subsession (";
+        if (streamClientState.subsession->rtcpIsMuxed()) {
+            env << "client port " << streamClientState.subsession->clientPortNum();
         } else {
-            env << "client ports " << scs.subsession->clientPortNum() << "-" << scs.subsession->clientPortNum()+1;
+            env << "client ports " << streamClientState.subsession->clientPortNum() << "-" << streamClientState.subsession->clientPortNum()+1;
         }
         env << ")\n";
 
-        const char *sprop = scs.subsession->fmtp_spropparametersets();
+        const char *sprop = streamClientState.subsession->fmtp_spropparametersets();
         uint8_t const* sps = NULL;
         unsigned spsSize = 0;
         uint8_t const* pps = NULL;
@@ -96,31 +96,31 @@ void continueAfterSETUP(RTSPClient* rtspClient, int resultCode, char* resultStri
         // (This will prepare the data sink to receive data; the actual flow of data from the client won't start happening until later,
         // after we've sent a RTSP "PLAY" command.)
 
-        scs.subsession->sink = DummySink::createNew(env, *scs.subsession, rtspClient->url());
+        streamClientState.subsession->sink = DummySink::createNew(env, *streamClientState.subsession, rtspClient->url());
         // perhaps use your own custom "MediaSink" subclass instead
-        if (scs.subsession->sink == NULL) {
-            env << *rtspClient << "Failed to create a data sink for the \"" << *scs.subsession
+        if (streamClientState.subsession->sink == NULL) {
+            env << *rtspClient << "Failed to create a data sink for the \"" << *streamClientState.subsession
                 << "\" subsession: " << env.getResultMsg() << "\n";
             break;
         }
 
-        env << *rtspClient << "Created a data sink for the \"" << *scs.subsession << "\" subsession\n";
-        scs.subsession->miscPtr = rtspClient; // a hack to let subsession handler functions get the "RTSPClient" from the subsession
+        env << *rtspClient << "Created a data sink for the \"" << *streamClientState.subsession << "\" subsession\n";
+        streamClientState.subsession->miscPtr = rtspClient; // a hack to let subsession handler functions get the "RTSPClient" from the subsession
 
 
         if (sps != NULL) {
-            ((DummySink *)scs.subsession->sink)->setSprop(sps, spsSize);
+            ((DummySink *)streamClientState.subsession->sink)->setSprop(sps, spsSize);
         }
         if (pps != NULL) {
-            ((DummySink *)scs.subsession->sink)->setSprop(pps, ppsSize);
+            ((DummySink *)streamClientState.subsession->sink)->setSprop(pps, ppsSize);
         }
 
-        scs.subsession->sink->startPlaying(*(scs.subsession->readSource()),
-                                           subsessionAfterPlaying, scs.subsession);
+        streamClientState.subsession->sink->startPlaying(*(streamClientState.subsession->readSource()),
+                                           subsessionAfterPlaying, streamClientState.subsession);
 
         // Also set a handler to be called if a RTCP "BYE" arrives for this subsession:
-        if (scs.subsession->rtcpInstance() != NULL) {
-            scs.subsession->rtcpInstance()->setByeHandler(subsessionByeHandler, scs.subsession);
+        if (streamClientState.subsession->rtcpInstance() != NULL) {
+            streamClientState.subsession->rtcpInstance()->setByeHandler(subsessionByeHandler, streamClientState.subsession);
         }
 
     } while (0);
