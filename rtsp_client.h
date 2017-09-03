@@ -5,6 +5,7 @@
 #include <BasicUsageEnvironment.hh>
 
 #include "stream_state.h"
+#include "rtsp_session.h"
 
 // If you're streaming just a single stream (i.e., just from a single URL, once), then you can define and use just a single
 // "StreamClientState" structure, as a global variable in your application.  However, because - in this demo application - we're
@@ -14,7 +15,7 @@
 class CustomRTSPClient: public RTSPClient {
 public:
     static CustomRTSPClient* createNew(
-            int id,
+            RtspSession *session,
             UsageEnvironment& env,
             char const* rtspURL,
             int verbosityLevel = 0,
@@ -22,7 +23,7 @@ public:
             portNumBits tunnelOverHTTPPortNum = 0);
 
 protected:
-    CustomRTSPClient(int id,
+    CustomRTSPClient(RtspSession *session,
                      UsageEnvironment& env,
                      char const* rtspURL,
                      int verbosityLevel,
@@ -32,8 +33,9 @@ protected:
     virtual ~CustomRTSPClient();
 public:
     StreamClientState& getStreamClientState() { return this->streamClientState; }
+    RtspSession* getSession() { return this->session; }
 private:
-    int clientId;
+    RtspSession* session;
     StreamClientState streamClientState;
 };
 

@@ -44,7 +44,7 @@ void RtspSession::run(){
 
 bool RtspSession::openURL(UsageEnvironment &env, const char *progName, const char *url){
     this->_rtspClient = CustomRTSPClient::createNew(
-                this->_id,
+                this,
                 env,
                 url,
                 RTSP_CLIENT_VERBOSITY_LEVEL,

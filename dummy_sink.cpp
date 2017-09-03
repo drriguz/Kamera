@@ -10,12 +10,14 @@
 // Define the size of the buffer that we'll use:
 #define DUMMY_SINK_RECEIVE_BUFFER_SIZE 100000
 
-DummySink* DummySink::createNew(UsageEnvironment& env, MediaSubsession& subsession, char const* streamId) {
-    return new DummySink(env, subsession, streamId);
+DummySink* DummySink::createNew(RtspSession* session, UsageEnvironment& env, MediaSubsession& subsession, char const* streamId) {
+    return new DummySink(session, env, subsession, streamId);
 }
 
-DummySink::DummySink(UsageEnvironment& env, MediaSubsession& subsession, char const* streamId)
+DummySink::DummySink(RtspSession* session,
+                     UsageEnvironment& env, MediaSubsession& subsession, char const* streamId)
     : MediaSink(env),
+      session(session),
       frameIndex(0),
       fSubsession(subsession) {
     fStreamId = strDup(streamId);
@@ -103,6 +105,7 @@ void DummySink::afterGettingFrame(unsigned frameSize, unsigned numTruncatedBytes
                 }
                 std::cout << "saved:" << std::endl;
             }
+            emit this->session->gotFrame(*image);
             frameIndex ++;
         }
     }

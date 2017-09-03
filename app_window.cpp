@@ -7,8 +7,8 @@ AppWindow::AppWindow(const char* progName, QWidget* parent)
     : QMainWindow(parent),
       _progName(progName){
     this->setupUi();
-    this->bindEvents();
     this->_rtspSession = new RtspSession(1024, this->_progName.c_str(), url, this);
+    this->bindEvents();
 }
 
 void AppWindow::setupUi(){
@@ -40,6 +40,7 @@ void AppWindow::setupUi(){
 void AppWindow::bindEvents(){
     connect(this->_startCaptureButton, SIGNAL(clicked()), this, SLOT(onStart()));
     connect(this->_stopCaptureButton, SIGNAL(clicked()), this, SLOT(onStop()));
+    connect(this->_rtspSession, SIGNAL(gotFrame(QImage)), this, SLOT(updateFrame(QImage)));
 }
 
 void AppWindow::onStart(){
@@ -50,4 +51,11 @@ void AppWindow::onStart(){
 void AppWindow::onStop(){
     std::cout << "stoping..." << std::endl;
     this->_rtspSession->stop();
+}
+
+void AppWindow::updateFrame(const QImage &image)
+{
+    std::cout << "frame..." << image.size().height() << std::endl;
+    QPixmap pixmap = QPixmap::fromImage(image.scaled(this->_cameraScreen->size(), Qt::KeepAspectRatio) );
+    this->_cameraScreen->setPixmap(pixmap);
 }

@@ -14,6 +14,8 @@ public:
     virtual ~RtspSession();
 public:
     void stop();
+signals:
+    void gotFrame(const QImage& image);
 protected:
     bool openURL(UsageEnvironment& env, const char* progName, const char * url);
     void run();

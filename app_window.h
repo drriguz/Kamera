@@ -21,6 +21,7 @@ public:
 private slots:
     void onStart();
     void onStop();
+    void updateFrame(const QImage& image);
 private:
     void setupUi();
     void bindEvents();
