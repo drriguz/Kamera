@@ -44,14 +44,14 @@ DummySink::DummySink(RtspSession* session,
     codecContext = avcodec_alloc_context3(codec);
     frame = av_frame_alloc();
     rgbFrame = av_frame_alloc();
-    avpicture_alloc( ( AVPicture *) rgbFrame, AV_PIX_FMT_RGB24, 720, 480);
+    avpicture_alloc( ( AVPicture *) rgbFrame, AV_PIX_FMT_RGB24, 1920, 1080);
 
     if (codec->capabilities & CODEC_CAP_TRUNCATED) {
         codecContext->flags |= CODEC_FLAG_TRUNCATED; // we do not send complete frames
     }
 
-    codecContext->width = 720;
-    codecContext->height = 480;
+    codecContext->width = 1920;
+    codecContext->height = 1080;
     codecContext->pix_fmt = AV_PIX_FMT_YUV420P;
 
     if (avcodec_open2(codecContext,codec,NULL) < 0) {
@@ -59,8 +59,8 @@ DummySink::DummySink(RtspSession* session,
         exit(5);
     }
 
-    this->sws_cxt = sws_getContext( codecContext->width, codecContext->height, codecContext->pix_fmt, 400, 300,
-                                    AV_PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL);
+    this->swsContext = sws_getContext( codecContext->width, codecContext->height, codecContext->pix_fmt, 1920, 1080,
+                                       AV_PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL);
 }
 
 DummySink::~DummySink() {
@@ -89,7 +89,7 @@ void DummySink::afterGettingFrame(unsigned frameSize, unsigned numTruncatedBytes
         }
         if (got_picture) {
             envir() << "->Picture decoded :" << frameIndex << "\n";
-            sws_scale(this->sws_cxt, this->frame->data,this->frame->linesize,
+            sws_scale(this->swsContext, this->frame->data,this->frame->linesize,
                       0, this->codecContext->height,
                       this->rgbFrame->data, this->rgbFrame->linesize);
             QImage *image = new QImage(this->rgbFrame->data[0],
@@ -97,14 +97,7 @@ void DummySink::afterGettingFrame(unsigned frameSize, unsigned numTruncatedBytes
                     this->codecContext->height,
                     QImage::Format_RGB888);
             QString name = QString("/Users/hfli/Movies/%1.jpg").arg(frameIndex);
-            if(frameIndex % 10 == 0){
-                QImageWriter writer(name);
-                if(!writer.write(*image))
-                {
-                    std::cout << writer.errorString().toStdString();
-                }
-                std::cout << "saved:" << std::endl;
-            }
+
             emit this->session->gotFrame(*image);
             frameIndex ++;
         }

@@ -1,7 +1,8 @@
 #include "app_window.h"
 #include <iostream>
 
-const char * url = "rtsp://172.16.1.183:8554/344.mkv";
+//const char * url = "rtsp://192.168.3.99:37441/h264";
+const char * url = "rtsp://10.209.21.189:8554/txdx.mkv";
 
 AppWindow::AppWindow(const char* progName, QWidget* parent)
     : QMainWindow(parent),
@@ -15,7 +16,7 @@ void AppWindow::setupUi(){
     QGridLayout *layout = new QGridLayout;
 
     this->_cameraScreen = new QLabel("Video 0", this);
-    this->_cameraScreen->setFixedSize(400, 300);
+    //this->_cameraScreen->setg
     this->_cameraScreen->setStyleSheet("background:'black';color:'white'");
 
     this->_startCaptureButton = new QPushButton(this);
@@ -55,7 +56,7 @@ void AppWindow::onStop(){
 
 void AppWindow::updateFrame(const QImage &image)
 {
-    std::cout << "frame..." << image.size().height() << std::endl;
+
     QPixmap pixmap = QPixmap::fromImage(image.scaled(this->_cameraScreen->size(), Qt::KeepAspectRatio) );
     this->_cameraScreen->setPixmap(pixmap);
 }

@@ -62,7 +62,7 @@ private:
     int len;
     AVFrame *frame;
     AVFrame *rgbFrame;
-    SwsContext* sws_cxt;
+    SwsContext* swsContext;
     uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
     char buf[1024];
     AVPacket avpkt;
